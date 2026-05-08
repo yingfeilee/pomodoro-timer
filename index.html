@@ -1,55 +1,72 @@
 <!DOCTYPE html>
+<!-- 声明这是一个HTML5文档 -->
 <html lang="zh-CN">
 <head>
+  <!-- 设置字符编码为UTF-8，支持中文显示 -->
   <meta charset="UTF-8">
+  <!-- 设置视口，让网页在手机上也能正常显示 -->
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!-- 网页标题，显示在浏览器标签页上 -->
   <title>番茄钟</title>
+
+  <!-- ==================== CSS样式部分 ==================== -->
   <style>
+    /* 通配符选择器：重置所有元素的默认内外边距，使用border-box盒模型 */
+    /* 这样设置可以让布局计算更直观，元素的宽度=内容+内边距+边框 */
     *, *::before, *::after {
       box-sizing: border-box;
       margin: 0;
       padding: 0;
     }
 
+    /* CSS变量定义：定义一些颜色和阴影变量，方便统一管理和修改 */
     :root {
-      --bg-main: #FFFFFF;
-      --bg-secondary: #F3F4F6;
-      --text-primary: #111827;
-      --text-secondary: #6B7280;
-      --accent-green: #10B981;
-      --accent-amber: #F59E0B;
-      --accent-red: #EF4444;
-      --shadow-light: 0 1px 3px rgba(0,0,0,0.1);
+      --bg-main: #FFFFFF;           /* 主背景色：白色 */
+      --bg-secondary: #F3F4F6;       /* 次要背景色：浅灰色 */
+      --text-primary: #111827;       /* 主要文字颜色：深灰黑色 */
+      --text-secondary: #6B7280;     /* 次要文字颜色：灰色 */
+      --accent-green: #10B981;       /* 强调色-绿色：表示进度充足 */
+      --accent-amber: #F59E0B;       /* 强调色-琥珀色：表示进度警告 */
+      --accent-red: #EF4444;         /* 强调色-红色：表示进度紧迫 */
+      --shadow-light: 0 1px 3px rgba(0,0,0,0.1);  /* 轻微阴影效果 */
     }
 
+    /* 页面主体样式 */
     body {
+      /* 使用系统默认字体，显示效果好 */
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      /* 背景色使用CSS变量 */
       background: var(--bg-main);
+      /* 最小高度为视口高度（100vh），占满整个屏幕 */
       min-height: 100vh;
+      /* 使用flex弹性布局，让内容居中 */
       display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      padding: 24px 16px;
+      flex-direction: column;   /* 子元素垂直排列 */
+      align-items: center;      /* 子元素水平居中 */
+      justify-content: center;  /* 子元素垂直居中 */
+      padding: 24px 16px;       /* 内边距：上下24px，左右16px */
       color: var(--text-primary);
     }
 
+    /* 主容器样式：包含所有页面元素 */
     .container {
-      max-width: 480px;
-      width: 100%;
+      max-width: 480px;      /* 最大宽度480像素 */
+      width: 100%;           /* 宽度占满父容器 */
       display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 40px;
+      flex-direction: column;   /* 子元素垂直排列 */
+      align-items: center;      /* 子元素水平居中 */
+      gap: 40px;                /* 子元素之间的间距为40像素 */
     }
 
-    /* Progress Ring */
+    /* ==================== 进度环样式 ==================== */
+    /* 进度环容器：用于显示倒计时和进度圈 */
     .progress-ring-container {
-      position: relative;
+      position: relative;   /* 相对定位，作为绝对定位子元素的参考 */
       width: 280px;
       height: 280px;
     }
 
+    /* 响应式设计：当屏幕宽度小于480px时，缩小进度环 */
     @media (max-width: 480px) {
       .progress-ring-container {
         width: 240px;
@@ -57,127 +74,150 @@
       }
     }
 
+    /* SVG进度环：通过旋转-90度，让圆环从顶部开始绘制 */
     .progress-ring {
       transform: rotate(-90deg);
       width: 100%;
       height: 100%;
     }
 
+    /* 进度环背景圆圈：灰色底圈 */
     .progress-ring__bg {
-      fill: none;
-      stroke: var(--bg-secondary);
-      stroke-width: 8;
+      fill: none;                        /* 不填充，只显示边框 */
+      stroke: var(--bg-secondary);       /* 边框颜色为浅灰色 */
+      stroke-width: 8;                   /* 边框宽度8像素 */
     }
 
+    /* 进度环前景圆圈：显示实际进度的圈 */
     .progress-ring__circle {
       fill: none;
-      stroke: var(--accent-green);
+      stroke: var(--accent-green);       /* 边框颜色默认绿色 */
       stroke-width: 8;
-      stroke-linecap: round;
+      stroke-linecap: round;             /* 圆角线帽，让端点更圆润 */
+      /* 过渡动画：让颜色和长度变化更平滑 */
       transition: stroke-dashoffset 0.3s ease, stroke 0.3s ease;
     }
 
+    /* 时间显示：显示在进度环中心的数字 */
     .time-display {
-      position: absolute;
-      top: 50%;
-      left: 50%;
+      position: absolute;       /* 绝对定位，相对于.progress-ring-container */
+      top: 50%;                 /* 距离顶部50% */
+      left: 50%;                /* 距离左边50% */
+      /* 配合top:50%和left:50%，实现完全居中 */
       transform: translate(-50%, -50%);
+      /* 使用等宽字体，让数字对齐更整齐 */
       font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      /* 响应式字体大小：最小4rem，最大6rem，中间按屏幕宽度缩放 */
       font-size: clamp(4rem, 10vw, 6rem);
-      font-weight: 300;
-      letter-spacing: -0.02em;
+      font-weight: 300;         /* 字重300，较细的字体 */
+      letter-spacing: -0.02em; /* 字间距微调 */
       color: var(--text-primary);
     }
 
+    /* 时间显示完成时的动画效果 */
     .time-display.complete {
-      animation: bounce 0.5s ease infinite;
+      animation: bounce 0.5s ease infinite;  /* 持续播放弹跳动画 */
     }
 
+    /* 定义弹跳动画：让数字放大缩小 */
     @keyframes bounce {
-      0%, 100% { transform: translate(-50%, -50%) scale(1); }
-      50% { transform: translate(-50%, -50%) scale(1.05); }
+      0%, 100% { transform: translate(-50%, -50%) scale(1); }      /* 起始和结束：原始大小 */
+      50% { transform: translate(-50%, -50%) scale(1.05); }       /* 中间：放大5% */
     }
 
-    /* Preset Buttons */
+    /* ==================== 预设按钮样式 ==================== */
+    /* 预设按钮容器：包含10分钟、15分钟等快捷选项 */
     .preset-buttons {
       display: flex;
-      flex-wrap: wrap;
-      justify-content: center;
-      gap: 12px;
+      flex-wrap: wrap;          /* 允许换行，适应小屏幕 */
+      justify-content: center;  /* 水平居中 */
+      gap: 12px;                /* 按钮之间的间距 */
     }
 
+    /* 单个预设按钮样式 */
     .preset-btn {
-      padding: 12px 20px;
-      font-size: 1rem;
-      font-weight: 500;
-      border: none;
-      border-radius: 12px;
+      padding: 12px 20px;       /* 内边距 */
+      font-size: 1rem;          /* 字体大小 */
+      font-weight: 500;         /* 字重 */
+      border: none;             /* 无边框 */
+      border-radius: 12px;       /* 圆角12像素 */
       background: var(--bg-secondary);
       color: var(--text-secondary);
-      cursor: pointer;
-      min-height: 44px;
-      transition: all 0.15s ease;
+      cursor: pointer;          /* 鼠标悬停时显示手型 */
+      min-height: 44px;         /* 最小高度，方便点击 */
+      transition: all 0.15s ease;  /* 过渡动画 */
     }
 
+    /* 鼠标悬停时的样式 */
     .preset-btn:hover {
-      background: #E5E7EB;
+      background: #E5E7EB;      /* 背景色变深一点 */
     }
 
+    /* 鼠标按下时的样式：缩小一点点，给用户反馈 */
     .preset-btn:active {
       transform: scale(0.97);
     }
 
+    /* 选中状态的预设按钮 */
     .preset-btn.active {
-      background: var(--text-primary);
-      color: #FFFFFF;
-      box-shadow: var(--shadow-light);
+      background: var(--text-primary);  /* 深色背景 */
+      color: #FFFFFF;                   /* 白色文字 */
+      box-shadow: var(--shadow-light);  /* 添加阴影 */
     }
 
-    /* Custom Input */
+    /* ==================== 自定义输入框样式 ==================== */
+    /* 自定义输入容器：包含输入框和"分钟"文字 */
     .custom-input {
       display: flex;
-      align-items: center;
-      gap: 8px;
+      align-items: center;  /* 垂直居中 */
+      gap: 8px;             /* 输入框和文字之间的间距 */
     }
 
+    /* 输入框样式 */
     .custom-input input {
-      width: 80px;
-      padding: 10px 12px;
+      width: 80px;              /* 固定宽度 */
+      padding: 10px 12px;       /* 内边距 */
       font-size: 1rem;
-      font-family: inherit;
-      border: 2px solid var(--bg-secondary);
-      border-radius: 8px;
-      outline: none;
+      font-family: inherit;     /* 继承父元素字体 */
+      border: 2px solid var(--bg-secondary);  /* 边框 */
+      border-radius: 8px;       /* 圆角 */
+      outline: none;            /* 去掉默认的聚焦样式 */
       transition: border-color 0.15s ease;
     }
 
+    /* 输入框聚焦时的样式：边框变深 */
     .custom-input input:focus {
       border-color: var(--text-primary);
     }
 
+    /* 输入框错误状态：边框变红 */
     .custom-input input.error {
       border-color: var(--accent-red);
     }
 
+    /* "分钟"文字样式 */
     .custom-input span {
       font-size: 0.875rem;
       color: var(--text-secondary);
     }
 
+    /* 错误提示信息样式 */
     .error-message {
       font-size: 0.75rem;
       color: var(--accent-red);
       margin-top: 4px;
-      min-height: 1rem;
+      min-height: 1rem;  /* 预留高度，防止显示时布局跳动 */
     }
 
-    /* Controls */
+    /* ==================== 控制按钮样式 ==================== */
+    /* 控制按钮容器：包含"开始"和"重置"按钮 */
     .controls {
       display: flex;
-      gap: 16px;
+      gap: 16px;           /* 按钮之间的间距 */
       align-items: center;
     }
 
+    /* 控制按钮通用样式 */
     .control-btn {
       padding: 14px 32px;
       font-size: 1rem;
@@ -185,45 +225,51 @@
       border: none;
       border-radius: 12px;
       cursor: pointer;
-      min-height: 44px;
-      min-width: 100px;
+      min-height: 44px;   /* 最小高度，方便移动端点击 */
+      min-width: 100px;   /* 最小宽度 */
       transition: all 0.15s ease;
     }
 
+    /* 控制按钮按下效果 */
     .control-btn:active {
       transform: scale(0.97);
     }
 
+    /* 主要按钮样式（开始按钮） */
     .primary-btn {
       background: var(--text-primary);
       color: #FFFFFF;
       box-shadow: var(--shadow-light);
     }
 
+    /* 主要按钮悬停样式 */
     .primary-btn:hover {
-      background: #1F2937;
+      background: #1F2937;  /* 稍浅一点的深色 */
     }
 
+    /* 次要按钮样式（重置按钮） */
     .secondary-btn {
       background: var(--bg-secondary);
       color: var(--text-secondary);
     }
 
+    /* 次要按钮悬停样式 */
     .secondary-btn:hover {
       background: #E5E7EB;
     }
 
-    /* Mute Button */
+    /* ==================== 静音按钮样式 ==================== */
+    /* 静音按钮：固定在页面右下角 */
     .mute-btn {
-      position: fixed;
-      bottom: 24px;
-      right: 24px;
+      position: fixed;      /* 固定定位，不随页面滚动 */
+      bottom: 24px;         /* 距离底部24像素 */
+      right: 24px;          /* 距离右边24像素 */
       width: 44px;
       height: 44px;
       border: none;
-      border-radius: 50%;
+      border-radius: 50%;   /* 圆形按钮 */
       background: var(--bg-secondary);
-      font-size: 1.25rem;
+      font-size: 1.25rem;   /* emoji图标大小 */
       cursor: pointer;
       display: flex;
       align-items: center;
@@ -231,18 +277,21 @@
       transition: all 0.15s ease;
     }
 
+    /* 静音按钮悬停样式 */
     .mute-btn:hover {
       background: #E5E7EB;
     }
 
-    /* Keyboard hint */
+    /* ==================== 键盘提示样式 ==================== */
+    /* 键盘快捷键提示文字 */
     .keyboard-hint {
       font-size: 0.75rem;
       color: var(--text-secondary);
       margin-top: 24px;
-      opacity: 0.7;
+      opacity: 0.7;  /* 稍微透明一点，不那么显眼 */
     }
 
+    /* 键盘按键样式 */
     .keyboard-hint kbd {
       background: var(--bg-secondary);
       padding: 2px 6px;
@@ -251,124 +300,185 @@
     }
   </style>
 </head>
+
 <body>
+  <!-- 主容器：包含所有UI元素 -->
   <div class="container">
-    <!-- Progress Ring -->
+    <!-- ==================== 进度环区域 ==================== -->
+    <!-- 这是一个SVG圆环，用来显示倒计时进度 -->
     <div class="progress-ring-container">
+      <!-- SVG：可缩放矢量图形，用来画圆环 -->
+      <!-- viewBox定义了坐标系，宽高都是280 -->
       <svg class="progress-ring" viewBox="0 0 280 280">
+        <!-- 背景圆圈：灰色的底圈，cx和cy是圆心坐标，r是半径 -->
         <circle class="progress-ring__bg" cx="140" cy="140" r="126"></circle>
+        <!-- 前景圆圈：会根据进度动态改变长度，显示实际倒计时进度 -->
         <circle class="progress-ring__circle" cx="140" cy="140" r="126"></circle>
       </svg>
+      <!-- 时间显示：显示在圆环中心的数字，如"25:00" -->
       <div class="time-display" id="timeDisplay">25:00</div>
     </div>
 
-    <!-- Preset Buttons -->
+    <!-- ==================== 预设按钮区域 ==================== -->
+    <!-- 快捷选择倒计时时间：10分钟、15分钟、25分钟、60分钟 -->
+    <!-- data-minutes是自定义属性，存储按钮对应的时间（分钟数） -->
     <div class="preset-buttons">
       <button class="preset-btn" data-minutes="10">10分钟</button>
       <button class="preset-btn" data-minutes="15">15分钟</button>
+      <!-- active类表示当前选中状态，默认选中25分钟 -->
       <button class="preset-btn active" data-minutes="25">25分钟</button>
       <button class="preset-btn" data-minutes="60">60分钟</button>
     </div>
 
-    <!-- Custom Input -->
+    <!-- ==================== 自定义输入区域 ==================== -->
+    <!-- 用户可以输入自定义的倒计时时间 -->
     <div>
       <div class="custom-input">
+        <!-- number类型只能输入数字，min和max限制范围，placeholder是提示文字 -->
         <input type="number" id="customInput" min="1" max="180" placeholder="自定义">
         <span>分钟</span>
       </div>
+      <!-- 错误信息：当输入无效时显示 -->
       <div class="error-message" id="errorMessage"></div>
     </div>
 
-    <!-- Controls -->
+    <!-- ==================== 控制按钮区域 ==================== -->
+    <!-- 开始/暂停按钮和重置按钮 -->
     <div class="controls">
+      <!-- primary-btn是主要按钮样式（深色背景），点击开始或暂停倒计时 -->
       <button class="control-btn primary-btn" id="toggleBtn">开始</button>
+      <!-- secondary-btn是次要按钮样式（浅色背景），点击重置倒计时 -->
       <button class="control-btn secondary-btn" id="resetBtn">重置</button>
     </div>
 
+    <!-- 键盘快捷键提示 -->
     <div class="keyboard-hint">
       <kbd>空格</kbd> 开始/暂停 · <kbd>Esc</kbd> 重置
     </div>
   </div>
 
-  <!-- Mute Button -->
+  <!-- 静音按钮：固定在右下角，点击切换提示音开关 -->
   <button class="mute-btn" id="muteBtn" title="切换提示音">🔔</button>
 
+  <!-- ==================== JavaScript脚本部分 ==================== -->
   <script>
-    // ==================== State ====================
+    // ==================== 状态管理 ====================
+    // state对象：存储应用的所有状态数据
+    // 这种设计模式叫做"单一状态树"，方便管理和追踪状态
     const state = {
-      mode: 'preset',
-      totalSeconds: 25 * 60,
-      remainingSeconds: 25 * 60,
-      status: 'idle', // idle | running | paused | complete
-      isMuted: false,
-      lastUpdatedAt: null,
-      intervalId: null
+      mode: 'preset',           // 当前模式：'preset'(预设时间) 或 'custom'(自定义时间)
+      totalSeconds: 25 * 60,    // 总倒计时秒数，默认25分钟（25 * 60秒）
+      remainingSeconds: 25 * 60,// 剩余秒数，初始值与totalSeconds相同
+      status: 'idle',           // 当前状态：'idle'(空闲) | 'running'(运行中) | 'paused'(已暂停) | 'complete'(已完成)
+      isMuted: false,           // 是否静音，false表示有提示音
+      lastUpdatedAt: null,       // 上次更新时间戳，用于计算已经过去了多少时间
+      intervalId: null           // 定时器ID，用于停止定时器
     };
 
-    // ==================== Presets ====================
+    // ==================== 预设时间配置 ====================
+    // 预设的倒计时选项，每个选项包含标签文字和秒数
     const PRESETS = [
-      { label: '10分钟', value: 10 * 60 },
-      { label: '15分钟', value: 15 * 60 },
-      { label: '25分钟', value: 25 * 60 },
-      { label: '60分钟', value: 60 * 60 }
+      { label: '10分钟', value: 10 * 60 },   // 10分钟 = 600秒
+      { label: '15分钟', value: 15 * 60 },   // 15分钟 = 900秒
+      { label: '25分钟', value: 25 * 60 },   // 25分钟 = 1500秒（番茄工作法标准时长）
+      { label: '60分钟', value: 60 * 60 }    // 60分钟 = 3600秒
     ];
 
-    const CUSTOM_LIMITS = { min: 60, max: 10800 };
+    // 自定义时间的限制范围（秒）
+    const CUSTOM_LIMITS = { min: 60, max: 10800 };  // 最小1分钟，最大180分钟
 
-    // ==================== DOM Elements ====================
-    const timeDisplay = document.getElementById('timeDisplay');
-    const progressCircle = document.querySelector('.progress-ring__circle');
-    const presetButtons = document.querySelectorAll('.preset-btn');
-    const customInput = document.getElementById('customInput');
-    const errorMessage = document.getElementById('errorMessage');
-    const toggleBtn = document.getElementById('toggleBtn');
-    const resetBtn = document.getElementById('resetBtn');
-    const muteBtn = document.getElementById('muteBtn');
+    // ==================== DOM元素获取 ====================
+    // 通过ID或类名获取页面上的HTML元素，方便后续操作
+    const timeDisplay = document.getElementById('timeDisplay');           // 时间显示区域
+    const progressCircle = document.querySelector('.progress-ring__circle'); // 进度环前景圆圈
+    const presetButtons = document.querySelectorAll('.preset-btn');      // 所有预设按钮
+    const customInput = document.getElementById('customInput');           // 自定义输入框
+    const errorMessage = document.getElementById('errorMessage');         // 错误提示区域
+    const toggleBtn = document.getElementById('toggleBtn');               // 开始/暂停按钮
+    const resetBtn = document.getElementById('resetBtn');                 // 重置按钮
+    const muteBtn = document.getElementById('muteBtn');                   // 静音按钮
 
-    // ==================== Progress Ring ====================
-    const circumference = 2 * Math.PI * 126;
+    // ==================== 进度环初始化 ====================
+    // 计算圆环的周长：周长 = 2 * π * 半径
+    // 半径是126（SVG中圆的r属性值）
+    const circumference = 2 * Math.PI * 126;  // 约等于 791.68
+
+    // 设置进度环的样式
+    // strokeDasharray: 定义虚线样式，这里设置为周长，表示完整的圆
     progressCircle.style.strokeDasharray = circumference;
+    // strokeDashoffset: 定义虚线起始偏移量
+    // 设置为0表示从起点开始绘制，进度为100%
     progressCircle.style.strokeDashoffset = 0;
 
+    /**
+     * 更新进度环显示
+     * 根据剩余时间计算进度，并更新圆环的长度和颜色
+     */
     function updateProgressRing() {
+      // 计算进度比例：剩余时间 / 总时间
+      // 例如：剩余15分钟，总25分钟，进度 = 15/25 = 0.6 (60%)
       const progress = state.remainingSeconds / state.totalSeconds;
+
+      // 计算偏移量：周长 * (1 - 进度)
+      // 进度100%时，偏移量为0（完整圆环）
+      // 进度50%时，偏移量为周长的一半（半圆）
       const offset = circumference * (1 - progress);
       progressCircle.style.strokeDashoffset = offset;
 
-      // Update color based on progress
+      // 根据进度设置颜色
+      // 进度 > 50%：绿色（时间充足）
+      // 进度 > 20%：琥珀色（时间紧张）
+      // 进度 <= 20%：红色（时间紧迫）
       let color;
       if (progress > 0.5) {
-        color = '#10B981';
+        color = '#10B981';  // 绿色
       } else if (progress > 0.2) {
-        color = '#F59E0B';
+        color = '#F59E0B';  // 琥珀色
       } else {
-        color = '#EF4444';
+        color = '#EF4444';  // 红色
       }
       progressCircle.style.stroke = color;
     }
 
-    // ==================== Time Display ====================
+    // ==================== 时间显示相关函数 ====================
+
+    /**
+     * 将秒数格式化为 MM:SS 格式
+     * @param {number} seconds - 秒数
+     * @returns {string} 格式化后的时间字符串，如 "25:00"
+     */
     function formatTime(seconds) {
-      const mins = Math.floor(seconds / 60);
-      const secs = seconds % 60;
+      const mins = Math.floor(seconds / 60);  // 计算分钟数（向下取整）
+      const secs = seconds % 60;              // 计算剩余秒数
+      // padStart(2, '0') 确保分钟和秒数都是两位数
+      // 例如：5 变成 "05"
       return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
     }
 
+    /**
+     * 更新时间显示
+     * 更新页面上的时间数字，以及浏览器标签页的标题
+     */
     function updateTimeDisplay() {
+      // 更新时间显示文字
       timeDisplay.textContent = formatTime(state.remainingSeconds);
 
-      // Update page title
+      // 更新页面标题（显示在浏览器标签页上）
       if (state.status === 'running') {
+        // 运行中：显示剩余时间和"专注中"
         document.title = `(${formatTime(state.remainingSeconds)}) 专注中 - 番茄钟`;
       } else if (state.status === 'paused') {
+        // 已暂停：显示剩余时间和"已暂停"
         document.title = `(${formatTime(state.remainingSeconds)}) 已暂停 - 番茄钟`;
       } else if (state.status === 'complete') {
+        // 已完成：显示"时间到"
         document.title = '⏰ 时间到！ - 番茄钟';
       } else {
+        // 空闲状态：只显示"番茄钟"
         document.title = '番茄钟';
       }
 
-      // Bounce animation when complete
+      // 如果倒计时完成，给时间显示添加弹跳动画
       if (state.status === 'complete') {
         timeDisplay.classList.add('complete');
       } else {
@@ -376,230 +486,365 @@
       }
     }
 
-    // ==================== Timer Logic ====================
+    // ==================== 计时器核心逻辑 ====================
+
+    /**
+     * 定时器回调函数：每100毫秒执行一次
+     * 计算已经过去的时间，更新剩余时间
+     */
     function tick() {
-      const now = Date.now();
+      const now = Date.now();  // 获取当前时间戳（毫秒）
+      // 计算从开始到现在已经过去的秒数
       const elapsed = Math.floor((now - state.lastUpdatedAt) / 1000);
+
+      // 计算剩余秒数 = 总时间 - 已过去时间
+      // Math.max(0, ...) 确保不会出现负数
       state.remainingSeconds = Math.max(0, state.totalSeconds - elapsed);
 
+      // 更新显示
       updateTimeDisplay();
       updateProgressRing();
 
+      // 如果时间到了（剩余秒数为0），触发完成
       if (state.remainingSeconds <= 0) {
         complete();
       }
     }
 
+    /**
+     * 开始倒计时
+     * 从初始状态或重置后开始
+     */
     function start() {
+      // 如果已经完成，不允许重新开始（需要先重置）
       if (state.status === 'complete') return;
 
+      // 更新状态为"运行中"
       state.status = 'running';
+      // 记录开始时间
       state.lastUpdatedAt = Date.now();
+      // 重置剩余时间为总时间
       state.remainingSeconds = state.totalSeconds;
 
+      // 启动定时器，每100毫秒执行一次tick函数
+      // setInterval返回定时器ID，后续可以用来停止
       state.intervalId = setInterval(tick, 100);
 
+      // 更新按钮文字为"暂停"
       toggleBtn.textContent = '暂停';
+      // 更新时间显示
       updateTimeDisplay();
     }
 
+    /**
+     * 暂停倒计时
+     * 只能从"运行中"状态暂停
+     */
     function pause() {
+      // 如果当前不是运行中状态，直接返回
       if (state.status !== 'running') return;
 
+      // 更新状态为"已暂停"
       state.status = 'paused';
+      // 清除定时器，停止计时
       clearInterval(state.intervalId);
       state.intervalId = null;
 
-      // Recalculate remaining time based on elapsed
+      // 重新计算剩余时间（确保暂停时显示正确的时间）
       const now = Date.now();
       const elapsed = Math.floor((now - state.lastUpdatedAt) / 1000);
       state.remainingSeconds = Math.max(0, state.totalSeconds - elapsed);
-      state.totalSeconds = state.remainingSeconds; // Update total for resume
+      // 更新总时间为当前剩余时间（恢复时会用到）
+      state.totalSeconds = state.remainingSeconds;
 
+      // 更新按钮文字为"继续"
       toggleBtn.textContent = '继续';
       updateTimeDisplay();
     }
 
+    /**
+     * 继续倒计时
+     * 从暂停状态恢复
+     */
     function resume() {
+      // 如果当前不是暂停状态，直接返回
       if (state.status !== 'paused') return;
 
+      // 更新状态为"运行中"
       state.status = 'running';
+      // 重新记录开始时间
       state.lastUpdatedAt = Date.now();
 
+      // 重新启动定时器
       state.intervalId = setInterval(tick, 100);
 
+      // 更新按钮文字为"暂停"
       toggleBtn.textContent = '暂停';
       updateTimeDisplay();
     }
 
+    /**
+     * 重置倒计时
+     * 恢复到初始状态
+     */
     function reset() {
+      // 更新状态为"空闲"
       state.status = 'idle';
+      // 清除定时器
       clearInterval(state.intervalId);
       state.intervalId = null;
+      // 重置剩余时间为总时间
       state.remainingSeconds = state.totalSeconds;
 
+      // 更新按钮文字为"开始"
       toggleBtn.textContent = '开始';
+      // 更新显示
       updateTimeDisplay();
       updateProgressRing();
     }
 
+    /**
+     * 倒计时完成
+     * 触发提示音和完成状态
+     */
     function complete() {
+      // 更新状态为"已完成"
       state.status = 'complete';
+      // 清除定时器
       clearInterval(state.intervalId);
       state.intervalId = null;
 
+      // 更新按钮文字为"开始"（点击可以重新开始新的倒计时）
       toggleBtn.textContent = '开始';
       updateTimeDisplay();
       updateProgressRing();
 
+      // 如果没有静音，播放提示音
       if (!state.isMuted) {
         playNotificationSound();
       }
     }
 
+    /**
+     * 设置新的倒计时时间
+     * @param {number} seconds - 新的倒计时秒数
+     */
     function setTime(seconds) {
+      // 检查当前是否正在运行
       const wasRunning = state.status === 'running';
 
-      // Stop current timer
+      // 停止当前计时器
       clearInterval(state.intervalId);
       state.intervalId = null;
 
+      // 更新总时间和剩余时间
       state.totalSeconds = seconds;
       state.remainingSeconds = seconds;
-      state.status = 'idle';
+      state.status = 'idle';  // 重置为空闲状态
 
+      // 更新按钮文字
       toggleBtn.textContent = '开始';
+      // 更新显示
       updateTimeDisplay();
       updateProgressRing();
     }
 
-    // ==================== Audio ====================
+    // ==================== 音频相关 ====================
+
+    /**
+     * 播放提示音
+     * 使用Web Audio API生成简单的提示音
+     * 不需要外部音频文件
+     */
     function playNotificationSound() {
+      // 创建音频上下文（AudioContext）
+      // 这是浏览器提供的音频处理接口
       const audioContext = new (window.AudioContext || window.webkitAudioContext)();
 
+      /**
+       * 播放单个音调
+       * @param {number} frequency - 频率（Hz），决定音调高低
+       * @param {number} startTime - 开始时间（秒）
+       * @param {number} duration - 持续时间（秒）
+       */
       const playTone = (frequency, startTime, duration) => {
+        // 创建振荡器：产生声波
         const oscillator = audioContext.createOscillator();
+        // 创建增益节点：控制音量
         const gainNode = audioContext.createGain();
 
+        // 连接节点：振荡器 -> 增益节点 -> 扬声器
         oscillator.connect(gainNode);
         gainNode.connect(audioContext.destination);
 
+        // 设置频率（决定音调）
         oscillator.frequency.value = frequency;
+        // 设置波形类型：正弦波（声音柔和）
         oscillator.type = 'sine';
 
-        gainNode.gain.setValueAtTime(0, startTime);
-        gainNode.gain.linearRampToValueAtTime(0.3, startTime + 0.05);
-        gainNode.gain.linearRampToValueAtTime(0, startTime + duration);
+        // 设置音量变化（渐入渐出效果）
+        gainNode.gain.setValueAtTime(0, startTime);                    // 开始时音量为0
+        gainNode.gain.linearRampToValueAtTime(0.3, startTime + 0.05);  // 0.05秒内渐入到0.3
+        gainNode.gain.linearRampToValueAtTime(0, startTime + duration); // 结束时渐出为0
 
+        // 开始播放
         oscillator.start(startTime);
+        // 停止播放
         oscillator.stop(startTime + duration);
       };
 
-      const now = audioContext.currentTime;
-      playTone(880, now, 0.15);
-      playTone(880, now + 0.2, 0.15);
-      playTone(1100, now + 0.4, 0.3);
+      // 播放三声提示音
+      const now = audioContext.currentTime;  // 获取当前音频时间
+      playTone(880, now, 0.15);          // 第一声：880Hz（A5音），持续0.15秒
+      playTone(880, now + 0.2, 0.15);    // 第二声：0.2秒后，同样音调
+      playTone(1100, now + 0.4, 0.3);    // 第三声：1100Hz（更高音），持续0.3秒
     }
 
-    // ==================== Event Handlers ====================
-    // Toggle button
+    // ==================== 事件处理 ====================
+
+    // --- 开始/暂停按钮点击事件 ---
     toggleBtn.addEventListener('click', () => {
       if (state.status === 'idle') {
+        // 空闲状态 -> 开始计时
         start();
       } else if (state.status === 'running') {
+        // 运行中 -> 暂停
         pause();
       } else if (state.status === 'paused') {
+        // 已暂停 -> 继续计时
         resume();
       } else if (state.status === 'complete') {
+        // 已完成 -> 重置并开始新的25分钟倒计时
         state.totalSeconds = 25 * 60;
         state.mode = 'preset';
         reset();
-        updatePresetButtons(25);
+        updatePresetButtons(25);  // 更新预设按钮状态
         start();
       }
     });
 
-    // Reset button
+    // --- 重置按钮点击事件 ---
     resetBtn.addEventListener('click', () => {
+      // 如果是预设模式，重置为当前选中的预设时间
+      // 如果是自定义模式，保持自定义的时间
       state.totalSeconds = state.mode === 'preset' ? getActivePresetValue() : state.totalSeconds;
       reset();
     });
 
-    // Preset buttons
+    // --- 预设按钮相关函数 ---
+
+    /**
+     * 获取当前选中的预设按钮对应的时间（秒）
+     * @returns {number} 预设时间的秒数
+     */
     function getActivePresetValue() {
+      // 查找带有active类的预设按钮
       const activeBtn = document.querySelector('.preset-btn.active');
+      // 如果找到，返回其data-minutes属性值（转换为秒）
+      // 如果没找到，默认返回25分钟的秒数
       return activeBtn ? parseInt(activeBtn.dataset.minutes) * 60 : 25 * 60;
     }
 
+    /**
+     * 更新预设按钮的选中状态
+     * @param {number} minutes - 要选中的时间（分钟）
+     */
     function updatePresetButtons(minutes) {
+      // 遍历所有预设按钮
       presetButtons.forEach(btn => {
+        // 如果按钮的data-minutes等于传入的minutes，添加active类
+        // 否则移除active类
         btn.classList.toggle('active', parseInt(btn.dataset.minutes) === minutes);
       });
+      // 清空自定义输入框
       customInput.value = '';
+      // 移除错误状态
       customInput.classList.remove('error');
       errorMessage.textContent = '';
     }
 
+    // --- 预设按钮点击事件 ---
+    // 为每个预设按钮添加点击事件监听器
     presetButtons.forEach(btn => {
       btn.addEventListener('click', () => {
+        // 获取按钮的data-minutes属性值并转为整数
         const minutes = parseInt(btn.dataset.minutes);
+        // 更新模式为预设模式
         state.mode = 'preset';
+        // 设置总时间（转换为秒）
         state.totalSeconds = minutes * 60;
+        // 更新倒计时时间
         setTime(minutes * 60);
+        // 更新预设按钮的选中状态
         updatePresetButtons(minutes);
       });
     });
 
-    // Custom input
+    // --- 自定义输入框事件 ---
+
+    // 按下回车键时，让输入框失去焦点（触发blur事件）
     customInput.addEventListener('keydown', (e) => {
       if (e.key === 'Enter') {
-        customInput.blur();
+        customInput.blur();  // blur()方法让元素失去焦点
       }
     });
 
+    // 输入框失去焦点时（用户点击其他地方或按回车），验证并应用自定义时间
     customInput.addEventListener('blur', () => {
+      // 获取输入值并转为整数
       const value = parseInt(customInput.value);
 
+      // 验证输入：必须是1-180之间的数字
       if (isNaN(value) || value < 1 || value > 180) {
-        customInput.classList.add('error');
+        customInput.classList.add('error');  // 添加错误样式
         errorMessage.textContent = '请输入 1-180 之间的数字';
-        return;
+        return;  // 不继续执行后续代码
       }
 
+      // 验证通过，移除错误状态
       customInput.classList.remove('error');
       errorMessage.textContent = '';
+      // 更新模式为自定义模式
       state.mode = 'custom';
+      // 更新总时间
       state.totalSeconds = value * 60;
 
-      // Clear preset button active state
+      // 清除所有预设按钮的选中状态
       presetButtons.forEach(btn => btn.classList.remove('active'));
 
+      // 应用新的倒计时时间
       setTime(value * 60);
     });
 
-    // Mute button
+    // --- 静音按钮点击事件 ---
     muteBtn.addEventListener('click', () => {
+      // 切换静音状态（取反）
       state.isMuted = !state.isMuted;
+      // 更新按钮图标：静音显示🔇，有声音显示🔔
       muteBtn.textContent = state.isMuted ? '🔇' : '🔔';
     });
 
-    // Keyboard shortcuts
+    // --- 键盘快捷键事件 ---
     document.addEventListener('keydown', (e) => {
-      // Ignore if typing in input
+      // 如果用户正在输入框中输入，忽略快捷键
       if (e.target === customInput) return;
 
+      // 空格键：开始/暂停
       if (e.code === 'Space') {
+        e.preventDefault();  // 阻止默认行为（如页面滚动）
+        toggleBtn.click();   // 模拟点击开始/暂停按钮
+      }
+      // Escape键：重置
+      else if (e.code === 'Escape') {
         e.preventDefault();
-        toggleBtn.click();
-      } else if (e.code === 'Escape') {
-        e.preventDefault();
-        resetBtn.click();
+        resetBtn.click();    // 模拟点击重置按钮
       }
     });
 
-    // ==================== Initialize ====================
-    updateTimeDisplay();
-    updateProgressRing();
+    // ==================== 页面初始化 ====================
+    // 页面加载完成后，初始化显示
+    updateTimeDisplay();    // 显示初始时间
+    updateProgressRing();    // 显示初始进度环
   </script>
 </body>
 </html>
