@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>番茄钟</title>
+  <style>
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    :root {
+      --bg-main: #FFFFFF;
+      --bg-secondary: #F3F4F6;
+      --text-primary: #111827;
+      --text-secondary: #6B7280;
+      --accent-green: #10B981;
+      --accent-amber: #F59E0B;
+      --accent-red: #EF4444;
+      --shadow-light: 0 1px 3px rgba(0,0,0,0.1);
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--bg-main);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 24px 16px;
+      color: var(--text-primary);
+    }
+
+    .container {
+      max-width: 480px;
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 40px;
+    }
+
+    /* Progress Ring */
+    .progress-ring-container {
+      position: relative;
+      width: 280px;
+      height: 280px;
+    }
+
+    @media (max-width: 480px) {
+      .progress-ring-container {
+        width: 240px;
+        height: 240px;
+      }
+    }
+
+    .progress-ring {
+      transform: rotate(-90deg);
+      width: 100%;
+      height: 100%;
+    }
+
+    .progress-ring__bg {
+      fill: none;
+      stroke: var(--bg-secondary);
+      stroke-width: 8;
+    }
+
+    .progress-ring__circle {
+      fill: none;
+      stroke: var(--accent-green);
+      stroke-width: 8;
+      stroke-linecap: round;
+      transition: stroke-dashoffset 0.3s ease, stroke 0.3s ease;
+    }
+
+    .time-display {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: clamp(4rem, 10vw, 6rem);
+      font-weight: 300;
+      letter-spacing: -0.02em;
+      color: var(--text-primary);
+    }
+
+    .time-display.complete {
+      animation: bounce 0.5s ease infinite;
+    }
+
+    @keyframes bounce {
+      0%, 100% { transform: translate(-50%, -50%) scale(1); }
+      50% { transform: translate(-50%, -50%) scale(1.05); }
+    }
+
+    /* Preset Buttons */
+    .preset-buttons {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 12px;
+    }
+
+    .preset-btn {
+      padding: 12px 20px;
+      font-size: 1rem;
+      font-weight: 500;
+      border: none;
+      border-radius: 12px;
+      background: var(--bg-secondary);
+      color: var(--text-secondary);
+      cursor: pointer;
+      min-height: 44px;
+      transition: all 0.15s ease;
+    }
+
+    .preset-btn:hover {
+      background: #E5E7EB;
+    }
+
+    .preset-btn:active {
+      transform: scale(0.97);
+    }
+
+    .preset-btn.active {
+      background: var(--text-primary);
+      color: #FFFFFF;
+      box-shadow: var(--shadow-light);
+    }
+
+    /* Custom Input */
+    .custom-input {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .custom-input input {
+      width: 80px;
+      padding: 10px 12px;
+      font-size: 1rem;
+      font-family: inherit;
+      border: 2px solid var(--bg-secondary);
+      border-radius: 8px;
+      outline: none;
+      transition: border-color 0.15s ease;
+    }
+
+    .custom-input input:focus {
+      border-color: var(--text-primary);
+    }
+
+    .custom-input input.error {
+      border-color: var(--accent-red);
+    }
+
+    .custom-input span {
+      font-size: 0.875rem;
+      color: var(--text-secondary);
+    }
+
+    .error-message {
+      font-size: 0.75rem;
+      color: var(--accent-red);
+      margin-top: 4px;
+      min-height: 1rem;
+    }
+
+    /* Controls */
+    .controls {
+      display: flex;
+      gap: 16px;
+      align-items: center;
+    }
+
+    .control-btn {
+      padding: 14px 32px;
+      font-size: 1rem;
+      font-weight: 500;
+      border: none;
+      border-radius: 12px;
+      cursor: pointer;
+      min-height: 44px;
+      min-width: 100px;
+      transition: all 0.15s ease;
+    }
+
+    .control-btn:active {
+      transform: scale(0.97);
+    }
+
+    .primary-btn {
+      background: var(--text-primary);
+      color: #FFFFFF;
+      box-shadow: var(--shadow-light);
+    }
+
+    .primary-btn:hover {
+      background: #1F2937;
+    }
+
+    .secondary-btn {
+      background: var(--bg-secondary);
+      color: var(--text-secondary);
+    }
+
+    .secondary-btn:hover {
+      background: #E5E7EB;
+    }
+
+    /* Mute Button */
+    .mute-btn {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      width: 44px;
+      height: 44px;
+      border: none;
+      border-radius: 50%;
+      background: var(--bg-secondary);
+      font-size: 1.25rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.15s ease;
+    }
+
+    .mute-btn:hover {
+      background: #E5E7EB;
+    }
+
+    /* Keyboard hint */
+    .keyboard-hint {
+      font-size: 0.75rem;
+      color: var(--text-secondary);
+      margin-top: 24px;
+      opacity: 0.7;
+    }
+
+    .keyboard-hint kbd {
+      background: var(--bg-secondary);
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-family: inherit;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Progress Ring -->
+    <div class="progress-ring-container">
+      <svg class="progress-ring" viewBox="0 0 280 280">
+        <circle class="progress-ring__bg" cx="140" cy="140" r="126"></circle>
+        <circle class="progress-ring__circle" cx="140" cy="140" r="126"></circle>
+      </svg>
+      <div class="time-display" id="timeDisplay">25:00</div>
+    </div>
+
+    <!-- Preset Buttons -->
+    <div class="preset-buttons">
+      <button class="preset-btn" data-minutes="10">10分钟</button>
+      <button class="preset-btn" data-minutes="15">15分钟</button>
+      <button class="preset-btn active" data-minutes="25">25分钟</button>
+      <button class="preset-btn" data-minutes="60">60分钟</button>
+    </div>
+
+    <!-- Custom Input -->
+    <div>
+      <div class="custom-input">
+        <input type="number" id="customInput" min="1" max="180" placeholder="自定义">
+        <span>分钟</span>
+      </div>
+      <div class="error-message" id="errorMessage"></div>
+    </div>
+
+    <!-- Controls -->
+    <div class="controls">
+      <button class="control-btn primary-btn" id="toggleBtn">开始</button>
+      <button class="control-btn secondary-btn" id="resetBtn">重置</button>
+    </div>
+
+    <div class="keyboard-hint">
+      <kbd>空格</kbd> 开始/暂停 · <kbd>Esc</kbd> 重置
+    </div>
+  </div>
+
+  <!-- Mute Button -->
+  <button class="mute-btn" id="muteBtn" title="切换提示音">🔔</button>
+
+  <script>
+    // ==================== State ====================
+    const state = {
+      mode: 'preset',
+      totalSeconds: 25 * 60,
+      remainingSeconds: 25 * 60,
+      status: 'idle', // idle | running | paused | complete
+      isMuted: false,
+      lastUpdatedAt: null,
+      intervalId: null
+    };
+
+    // ==================== Presets ====================
+    const PRESETS = [
+      { label: '10分钟', value: 10 * 60 },
+      { label: '15分钟', value: 15 * 60 },
+      { label: '25分钟', value: 25 * 60 },
+      { label: '60分钟', value: 60 * 60 }
+    ];
+
+    const CUSTOM_LIMITS = { min: 60, max: 10800 };
+
+    // ==================== DOM Elements ====================
+    const timeDisplay = document.getElementById('timeDisplay');
+    const progressCircle = document.querySelector('.progress-ring__circle');
+    const presetButtons = document.querySelectorAll('.preset-btn');
+    const customInput = document.getElementById('customInput');
+    const errorMessage = document.getElementById('errorMessage');
+    const toggleBtn = document.getElementById('toggleBtn');
+    const resetBtn = document.getElementById('resetBtn');
+    const muteBtn = document.getElementById('muteBtn');
+
+    // ==================== Progress Ring ====================
+    const circumference = 2 * Math.PI * 126;
+    progressCircle.style.strokeDasharray = circumference;
+    progressCircle.style.strokeDashoffset = 0;
+
+    function updateProgressRing() {
+      const progress = state.remainingSeconds / state.totalSeconds;
+      const offset = circumference * (1 - progress);
+      progressCircle.style.strokeDashoffset = offset;
+
+      // Update color based on progress
+      let color;
+      if (progress > 0.5) {
+        color = '#10B981';
+      } else if (progress > 0.2) {
+        color = '#F59E0B';
+      } else {
+        color = '#EF4444';
+      }
+      progressCircle.style.stroke = color;
+    }
+
+    // ==================== Time Display ====================
+    function formatTime(seconds) {
+      const mins = Math.floor(seconds / 60);
+      const secs = seconds % 60;
+      return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+    }
+
+    function updateTimeDisplay() {
+      timeDisplay.textContent = formatTime(state.remainingSeconds);
+
+      // Update page title
+      if (state.status === 'running') {
+        document.title = `(${formatTime(state.remainingSeconds)}) 专注中 - 番茄钟`;
+      } else if (state.status === 'paused') {
+        document.title = `(${formatTime(state.remainingSeconds)}) 已暂停 - 番茄钟`;
+      } else if (state.status === 'complete') {
+        document.title = '⏰ 时间到！ - 番茄钟';
+      } else {
+        document.title = '番茄钟';
+      }
+
+      // Bounce animation when complete
+      if (state.status === 'complete') {
+        timeDisplay.classList.add('complete');
+      } else {
+        timeDisplay.classList.remove('complete');
+      }
+    }
+
+    // ==================== Timer Logic ====================
+    function tick() {
+      const now = Date.now();
+      const elapsed = Math.floor((now - state.lastUpdatedAt) / 1000);
+      state.remainingSeconds = Math.max(0, state.totalSeconds - elapsed);
+
+      updateTimeDisplay();
+      updateProgressRing();
+
+      if (state.remainingSeconds <= 0) {
+        complete();
+      }
+    }
+
+    function start() {
+      if (state.status === 'complete') return;
+
+      state.status = 'running';
+      state.lastUpdatedAt = Date.now();
+      state.remainingSeconds = state.totalSeconds;
+
+      state.intervalId = setInterval(tick, 100);
+
+      toggleBtn.textContent = '暂停';
+      updateTimeDisplay();
+    }
+
+    function pause() {
+      if (state.status !== 'running') return;
+
+      state.status = 'paused';
+      clearInterval(state.intervalId);
+      state.intervalId = null;
+
+      // Recalculate remaining time based on elapsed
+      const now = Date.now();
+      const elapsed = Math.floor((now - state.lastUpdatedAt) / 1000);
+      state.remainingSeconds = Math.max(0, state.totalSeconds - elapsed);
+      state.totalSeconds = state.remainingSeconds; // Update total for resume
+
+      toggleBtn.textContent = '继续';
+      updateTimeDisplay();
+    }
+
+    function resume() {
+      if (state.status !== 'paused') return;
+
+      state.status = 'running';
+      state.lastUpdatedAt = Date.now();
+
+      state.intervalId = setInterval(tick, 100);
+
+      toggleBtn.textContent = '暂停';
+      updateTimeDisplay();
+    }
+
+    function reset() {
+      state.status = 'idle';
+      clearInterval(state.intervalId);
+      state.intervalId = null;
+      state.remainingSeconds = state.totalSeconds;
+
+      toggleBtn.textContent = '开始';
+      updateTimeDisplay();
+      updateProgressRing();
+    }
+
+    function complete() {
+      state.status = 'complete';
+      clearInterval(state.intervalId);
+      state.intervalId = null;
+
+      toggleBtn.textContent = '开始';
+      updateTimeDisplay();
+      updateProgressRing();
+
+      if (!state.isMuted) {
+        playNotificationSound();
+      }
+    }
+
+    function setTime(seconds) {
+      const wasRunning = state.status === 'running';
+
+      // Stop current timer
+      clearInterval(state.intervalId);
+      state.intervalId = null;
+
+      state.totalSeconds = seconds;
+      state.remainingSeconds = seconds;
+      state.status = 'idle';
+
+      toggleBtn.textContent = '开始';
+      updateTimeDisplay();
+      updateProgressRing();
+    }
+
+    // ==================== Audio ====================
+    function playNotificationSound() {
+      const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+
+      const playTone = (frequency, startTime, duration) => {
+        const oscillator = audioContext.createOscillator();
+        const gainNode = audioContext.createGain();
+
+        oscillator.connect(gainNode);
+        gainNode.connect(audioContext.destination);
+
+        oscillator.frequency.value = frequency;
+        oscillator.type = 'sine';
+
+        gainNode.gain.setValueAtTime(0, startTime);
+        gainNode.gain.linearRampToValueAtTime(0.3, startTime + 0.05);
+        gainNode.gain.linearRampToValueAtTime(0, startTime + duration);
+
+        oscillator.start(startTime);
+        oscillator.stop(startTime + duration);
+      };
+
+      const now = audioContext.currentTime;
+      playTone(880, now, 0.15);
+      playTone(880, now + 0.2, 0.15);
+      playTone(1100, now + 0.4, 0.3);
+    }
+
+    // ==================== Event Handlers ====================
+    // Toggle button
+    toggleBtn.addEventListener('click', () => {
+      if (state.status === 'idle') {
+        start();
+      } else if (state.status === 'running') {
+        pause();
+      } else if (state.status === 'paused') {
+        resume();
+      } else if (state.status === 'complete') {
+        state.totalSeconds = 25 * 60;
+        state.mode = 'preset';
+        reset();
+        updatePresetButtons(25);
+        start();
+      }
+    });
+
+    // Reset button
+    resetBtn.addEventListener('click', () => {
+      state.totalSeconds = state.mode === 'preset' ? getActivePresetValue() : state.totalSeconds;
+      reset();
+    });
+
+    // Preset buttons
+    function getActivePresetValue() {
+      const activeBtn = document.querySelector('.preset-btn.active');
+      return activeBtn ? parseInt(activeBtn.dataset.minutes) * 60 : 25 * 60;
+    }
+
+    function updatePresetButtons(minutes) {
+      presetButtons.forEach(btn => {
+        btn.classList.toggle('active', parseInt(btn.dataset.minutes) === minutes);
+      });
+      customInput.value = '';
+      customInput.classList.remove('error');
+      errorMessage.textContent = '';
+    }
+
+    presetButtons.forEach(btn => {
+      btn.addEventListener('click', () => {
+        const minutes = parseInt(btn.dataset.minutes);
+        state.mode = 'preset';
+        state.totalSeconds = minutes * 60;
+        setTime(minutes * 60);
+        updatePresetButtons(minutes);
+      });
+    });
+
+    // Custom input
+    customInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        customInput.blur();
+      }
+    });
+
+    customInput.addEventListener('blur', () => {
+      const value = parseInt(customInput.value);
+
+      if (isNaN(value) || value < 1 || value > 180) {
+        customInput.classList.add('error');
+        errorMessage.textContent = '请输入 1-180 之间的数字';
+        return;
+      }
+
+      customInput.classList.remove('error');
+      errorMessage.textContent = '';
+      state.mode = 'custom';
+      state.totalSeconds = value * 60;
+
+      // Clear preset button active state
+      presetButtons.forEach(btn => btn.classList.remove('active'));
+
+      setTime(value * 60);
+    });
+
+    // Mute button
+    muteBtn.addEventListener('click', () => {
+      state.isMuted = !state.isMuted;
+      muteBtn.textContent = state.isMuted ? '🔇' : '🔔';
+    });
+
+    // Keyboard shortcuts
+    document.addEventListener('keydown', (e) => {
+      // Ignore if typing in input
+      if (e.target === customInput) return;
+
+      if (e.code === 'Space') {
+        e.preventDefault();
+        toggleBtn.click();
+      } else if (e.code === 'Escape') {
+        e.preventDefault();
+        resetBtn.click();
+      }
+    });
+
+    // ==================== Initialize ====================
+    updateTimeDisplay();
+    updateProgressRing();
+  </script>
+</body>
+</html>
